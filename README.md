@@ -1,0 +1,2 @@
+# ResolverLite
+DNS resolver lite
