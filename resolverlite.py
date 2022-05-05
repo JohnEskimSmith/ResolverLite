@@ -1,10 +1,8 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 __author__ = "SAI"
 __status__ = "Dev"
 
 import asyncio
-import importlib
 import uvloop
 from aiofiles import open as aiofiles_open
 

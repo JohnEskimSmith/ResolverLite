@@ -24,7 +24,7 @@ def parse_args():
     parser.add_argument('-f', '--input-file', dest='input_file', type=str, help='path to file with targets')
     parser.add_argument('-o', '--output-file', dest='output_file', type=str, help='path to file with results')
     parser.add_argument('-s', '--senders', dest='senders', type=int, default=1024,
-                        help='Number of send coroutines to use (default: 512)')
+                        help='Number of send coroutines to use (default: 1024)')
     parser.add_argument('--queue-sleep', dest='queue_sleep', type=int, default=1,
                         help='Sleep duration if the queue is full, default 1 sec. Queue size == senders')
     parser.add_argument('-timeout', '--timeout', dest='timeout', type=int, default=2,
