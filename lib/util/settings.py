@@ -18,7 +18,7 @@ def parse_args():
                         help='Single targets: ipv4, hostname, CIDRs')
     parser.add_argument('-q', '--query', type=str, default='A', dest='query',
                         help='single query: A, NS, TXT, MX ..., default: A')
-    parser.add_argument('-r', '--nameservers', type=str, default='8.8.8.8,8.8.4.4', dest='nameservers',
+    parser.add_argument('-r', '--nameservers', type=str, default='8.8.8.8,8.8.4.4,77.88.8.8,77.88.8.1', dest='nameservers',
                         help='nameservers as string with "," as split symbol, '
                              'default: 8.8.8.8,8.8.4.4')
     parser.add_argument('-f', '--input-file', dest='input_file', type=str, help='path to file with targets')
@@ -30,6 +30,7 @@ def parse_args():
     parser.add_argument('-timeout', '--timeout', dest='timeout', type=int, default=2,
                         help='Set timeout, seconds (default: 2)')
     parser.add_argument('--show-statistics', dest='statistics', action='store_true')
+    parser.add_argument('--use-msgpack', dest='use_msgpack', action='store_true')
     parser.add_argument('--show-only-success', dest='show_only_success', action='store_true')
     return parser.parse_args()
 
@@ -88,7 +89,8 @@ def parse_settings(args: argparse.Namespace) -> Tuple[TargetConfig, AppConfig]:
         'show_only_success': args.show_only_success,
         'nameservers': nameservers,
         'query_types_are_supported': query_types_are_supported,
-        'timeout': args.timeout
+        'timeout': args.timeout,
+        'use_msgpack': args.use_msgpack
     })
 
     target_settings = TargetConfig(**{

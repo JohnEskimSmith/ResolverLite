@@ -10,6 +10,8 @@ import asyncio_dgram
 from aioconsole import ainput
 from aiofiles import open as aiofiles_open
 from ujson import dumps as ujson_dumps
+from msgpack import dumps as msgpack_dumps
+
 
 from lib.core import validate_domain, create_error_template, make_document_from_response, Stats, AppConfig, \
     Target, TargetConfig
@@ -206,22 +208,28 @@ class OutputPrinter(QueueWorker):
                     await stats.write(ujson_dumps(statistics).encode('utf-8') + b'\n')
 
 
+def pack_dict_to_msgpack_string(value: Dict) -> str:
+    result_msg: bytes = msgpack_dumps(value)
+    return b64encode(result_msg).decode('ascii')
+
+
 class TargetWorker:
     """
-    Runs payload against target
+    send "payloads" to DNS servers
     """
 
     def __init__(self, stats: Stats, semaphore: asyncio.Semaphore, output_queue: asyncio.Queue,
-                 success_only: bool):
+                 success_only: bool, use_msgpack: bool = False):
         self.stats = stats
         self.semaphore = semaphore
         self.output_queue = output_queue
-        self.success_only = success_only
+        self.success_only: bool = success_only
+        self.function_pack: Callable = pack_dict_to_msgpack_string if use_msgpack else ujson_dumps
 
     async def send_result(self, result: Optional[Dict]):
         if result:
             try:
-                success = access_dot_path(result, 'status')
+                success = access_dot_path(result, 'data.dns.status')
             except:
                 success = 'unknown-error'
 
@@ -231,22 +239,16 @@ class TargetWorker:
                 else:
                     self.stats.count_error += 1
 
-            line = None
-            line_out = None
-            try:
-                if self.success_only:
-                    if success == 'success':
-                        line = result
-                else:
-                    line = result
-            except Exception:
-                pass
+            record = None
+            if self.success_only:
+                if success == 'success':
+                    record = result
+            else:
+                record = result
 
-            if line:
-                line_out = ujson_dumps(line)
-
-            if line_out:
-                await self.output_queue.put(line_out)
+            if record:
+                record_out: str = self.function_pack(record)
+                await self.output_queue.put(record_out)
 
     # noinspection PyBroadException
     async def do(self, target: Target):

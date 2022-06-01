@@ -29,7 +29,8 @@ async def main():
         target_worker = TargetWorker(statistics,
                                      task_semaphore,
                                      queue_prints,
-                                     config.show_only_success)
+                                     config.show_only_success,
+                                     use_msgpack=config.use_msgpack)
 
         input_reader: TargetReader = create_io_reader(statistics, queue_input, target_settings, config)
         task_producer = TaskProducer(statistics, queue_input, queue_tasks, target_worker)
