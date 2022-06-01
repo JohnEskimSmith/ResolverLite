@@ -7,3 +7,4 @@ asyncio_dgram
 dnslib
 tld
 msgpack
+aiobotocore

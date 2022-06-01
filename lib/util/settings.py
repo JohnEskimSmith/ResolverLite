@@ -2,11 +2,11 @@ import argparse
 from os import path
 from sys import stderr
 from typing import Tuple
-from lib.core import return_payloads_from_files, AppConfig, TargetConfig
+from lib.core import AppConfig, TargetConfig
 from .net import is_ip
 from itertools import cycle
 
-__all__ = ['parse_args', 'parse_settings']
+__all__ = ['parse_args', 'parse_settings', 'QUERY_TYPES_ARE_SUPPORTED', 'abort']
 
 QUERY_TYPES_ARE_SUPPORTED = ['A', 'ANY', 'CAA', 'CNAME', 'MX',  'NS', 'SOA', 'SRV', 'TXT']
 
