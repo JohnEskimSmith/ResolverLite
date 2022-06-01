@@ -17,6 +17,7 @@ class AppConfig:
     nameservers: Iterator
     query_types_are_supported: List[str]
     timeout: int
+    use_msgpack: bool
 
 
 @dataclass(frozen=True)
