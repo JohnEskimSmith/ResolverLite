@@ -258,37 +258,31 @@ class TargetWorker:
         сопрограмма, осуществляет подключение к Target, отправку и прием данных, формирует результата в виде dict
         """
         async with self.semaphore:
-            result = None
-            future_connection = asyncio_dgram.connect((target.nameserver, 53))
+            stream = await asyncio_dgram.connect((target.nameserver, 53))
             try:
-                stream = await asyncio.wait_for(future_connection, timeout=1.5)
-            except:
-                result = create_error_template(target, 'unknown')
-            else:
+                await stream.send(target.payload)
+                future_connection = stream.recv()
                 try:
-                    await stream.send(target.payload)
-                    future_connection = stream.recv()
-                    try:
-                        data, remote_addr = await asyncio.wait_for(future_connection, timeout=1.5)
-                    except asyncio.TimeoutError:
-                        await asyncio.sleep(0.005)
-                        try:
-                            stream.close()
-                            del stream
-                        except Exception as e:
-                            pass
-                        result = create_error_template(target, 'timeout')
-                    else:
-                        result = make_document_from_response(data, target, protocol='dns')
-                        stream.close()
-                except Exception as e:
+                    data, remote_addr = await asyncio.wait_for(future_connection, timeout=1.5)
+                except asyncio.TimeoutError:
                     await asyncio.sleep(0.005)
                     try:
                         stream.close()
                         del stream
                     except Exception as e:
                         pass
-                    result = create_error_template(target, str(e))
+                    result = create_error_template(target, 'timeout')
+                else:
+                    result = make_document_from_response(data, target, protocol='dns')
+                    stream.close()
+            except Exception as e:
+                await asyncio.sleep(0.005)
+                try:
+                    stream.close()
+                    del stream
+                except Exception as e:
+                    pass
+                result = create_error_template(target, str(e))
             if result:
                 await self.send_result(result)
 
