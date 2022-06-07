@@ -168,14 +168,16 @@ class Executor(QueueWorker):
         self.out_queue = out_queue
 
     async def run(self):
+        tasks = []
         while True:
             # wait for an item from the "start_application"
             task = await self.tasks_queue.get()
             if task == STOP_SIGNAL:
-                await self.out_queue.put(STOP_SIGNAL)
                 break
             if task:
-                await task
+                tasks.append(task)
+        await asyncio.gather(*tasks)
+        await self.out_queue.put(STOP_SIGNAL)
 
 
 class OutputPrinter(QueueWorker):
