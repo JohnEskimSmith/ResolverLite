@@ -3,6 +3,9 @@ __author__ = "SAI"
 __status__ = "Dev"
 
 import asyncio
+import datetime
+
+import ujson
 import uvloop
 from aiofiles import open as aiofiles_open
 from os import unlink
@@ -14,7 +17,7 @@ from lib.yandex import parse_args_env
 
 
 async def main(event, context):
-    target_settings, config, s3_config = await parse_args_env(event)
+    target_settings, config, s3_config, sqs_config = await parse_args_env(event)
     queue_input = asyncio.Queue()
     queue_tasks = asyncio.Queue()
     queue_prints = asyncio.Queue()
@@ -44,6 +47,7 @@ async def main(event, context):
     with open(config.output_file, 'rb') as outfile:
         data = outfile.read()
         data_packed = gzip_compress(data, compresslevel=4)
+    # region sending to s3 bucket
     client_s3 = s3_config['client']
     bucket = s3_config['about_bucket']['bucket']
     key_bucket = s3_config['about_bucket']['key']
@@ -55,18 +59,45 @@ async def main(event, context):
     except Exception as exp:
         http_status = 0
         print(exp)
+    # endregion
+
     try:
         await s3_config['client'].close()
     except Exception as e:
         print(e)
         print('errors when closing S3 Client connection')
-    # endregion
+
     # need delete tmp file
     try:
         unlink(config.input_file)
         unlink(config.output_file)
     except:
         pass
+
+    # region sending to sqs about file saved to buckets
+    if sqs_config:
+        message_sqs = {'bucket': bucket,
+                       'key': key_bucket,
+                       'timestamp': int(datetime.datetime.now().timestamp())}
+
+        body_message: str = ujson.dumps(message_sqs)
+        status = await sqs_config['client'].send_message(QueueUrl=sqs_config['queue_url'],
+                                                         MessageBody=body_message)
+        try:
+            status_code: int = status['ResponseMetadata']['HTTPStatusCode']
+            if status_code != 200:
+                print(f'SQS: errors: {status_code}')
+            else:
+                print(f'SQS sent: {bucket}/{key_bucket}')
+        except Exception as error_send:
+            print(f'SQS: error: {error_send}')
+        try:
+            await sqs_config['client'].close()
+        except Exception as e:
+            print(e)
+            print('errors when closing SQS Client connection')
+    # endregion
+
     return http_status
 
 

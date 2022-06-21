@@ -61,7 +61,7 @@ def create_default_info_for_routes_bucket(settings_s3: Dict) -> Dict:
             'key': s3_prefix_key}
 
 
-async def parse_args_env(event: Dict) -> Tuple[TargetConfig, AppConfig, Dict]:
+async def parse_args_env(event: Dict) -> Tuple[TargetConfig, AppConfig, Dict, Optional[Dict]]:
 
     input_file: Optional[str] = parse_sqs_message_yandex(event)
     if not input_file:
@@ -92,7 +92,7 @@ async def parse_args_env(event: Dict) -> Tuple[TargetConfig, AppConfig, Dict]:
         abort(f'ERROR: query type not supported: {query}')
 
     output_file = f'/tmp/{uuid4().hex}.results'
-
+    # region client s3
     s3_out_struct = {'service_name': 's3',
                      'region_name': os_environ.get('region_name', 'ru-east-1'),
                      'use_ssl': True,
@@ -116,7 +116,34 @@ async def parse_args_env(event: Dict) -> Tuple[TargetConfig, AppConfig, Dict]:
     s3['endpoint'] = s3_out_struct['endpoint']
     s3['about_bucket']: Dict = create_default_info_for_routes_bucket(s3)
     s3['output_file'] = output_file
+    # endregion
+    # region client sqs
+    sqs_out_struct = {'service_name': 'sqs',
+                      'region_name': os_environ.get('region_name_sqs', 'ru-east-1'),
+                      'use_ssl': True,
+                      'endpoint_url': os_environ.get('endpoint_url_sqs'),
+                      'aws_secret_access_key': os_environ.get('aws_secret_access_key_sqs'),
+                      'aws_access_key_id': os_environ.get('aws_access_key_id_sqs'),
+                      'queue_url': os_environ.get('queuq_url_sqs')
+                      }
+    if sqs_out_struct['queue_url']:  # TODO: rewrite checking settings
+        keys = ['service_name', 'endpoint_url', 'region_name', 'aws_secret_access_key', 'aws_access_key_id', 'use_ssl']
+        init_keys = {k: sqs_out_struct.get(k) for k in keys if sqs_out_struct.get(k)}
 
+        _session = AioSession()
+        exit_stack = AsyncExitStack()
+        client_sqs = await create_aws_client(_session, exit_stack, auth_struct=init_keys)
+        print('created Client for SQS')
+        sqs = dict()
+        sqs['init_keys'] = init_keys
+        sqs['client'] = client_sqs
+        sqs['queue_url'] = sqs_out_struct['queue_url']
+    else:
+        sqs = None
+        print('mode about SQS - not enabled')
+
+    # endregion
+    show_only_success = True if os_environ.get('show_only_success', '') == 'True' else False
     app_settings = AppConfig(**{
         'senders': senders,
         'queue_sleep': 1,
@@ -126,7 +153,7 @@ async def parse_args_env(event: Dict) -> Tuple[TargetConfig, AppConfig, Dict]:
         'single_targets': '',
         'output_file': output_file,
         'write_mode': 'a',
-        'show_only_success': False,
+        'show_only_success': show_only_success,
         'nameservers': nameservers,
         'query_types_are_supported': query_types_are_supported,
         'timeout': 2,
@@ -136,4 +163,4 @@ async def parse_args_env(event: Dict) -> Tuple[TargetConfig, AppConfig, Dict]:
     target_settings = TargetConfig(**{
         'nameservers': cycle(nameservers)
     })
-    return target_settings, app_settings, s3
+    return target_settings, app_settings, s3, sqs
