@@ -18,9 +18,9 @@ def parse_args():
                         help='Single targets: ipv4, hostname, CIDRs')
     parser.add_argument('-q', '--query', type=str, default='A', dest='query',
                         help='single query: A, NS, TXT, MX ..., default: A')
-    parser.add_argument('-r', '--nameservers', type=str, default='8.8.8.8,8.8.4.4,77.88.8.8,77.88.8.1', dest='nameservers',
+    parser.add_argument('-r', '--nameservers', type=str, default='8.8.8.8,8.8.4.4,77.88.8.8,77.88.8.1,1.0.0.1,1.1.1.1', dest='nameservers',
                         help='nameservers as string with "," as split symbol, '
-                             'default: 8.8.8.8,8.8.4.4')
+                             'default: 8.8.8.8,8.8.4.4,77.88.8.8,77.88.8.1,1.0.0.1,1.1.1.1')
     parser.add_argument('-f', '--input-file', dest='input_file', type=str, help='path to file with targets')
     parser.add_argument('-o', '--output-file', dest='output_file', type=str, help='path to file with results')
     parser.add_argument('-s', '--senders', dest='senders', type=int, default=1024,
