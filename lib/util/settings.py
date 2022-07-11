@@ -10,6 +10,7 @@ __all__ = ['parse_args', 'parse_settings', 'QUERY_TYPES_ARE_SUPPORTED', 'abort']
 
 QUERY_TYPES_ARE_SUPPORTED = ['A', 'ANY', 'CAA', 'CNAME', 'MX',  'NS', 'SOA', 'SRV', 'TXT']
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description='DNS resolver lite(asyncio)')
     parser.add_argument('-settings', type=str, help='path to file with settings (yaml)')
